@@ -1,0 +1,80 @@
+# vim:fileencoding=utf-8
+from calibre.ebooks.BeautifulSoup import BeautifulSoup
+import re
+"""
+A Calibre recipe for http://www.haaretz.co.il
+"""
+
+__license__ = 'GPL v3'
+__copyright__ = '2015, Guy Rutenberg (http://www.guyrutenberg.com/contact-me)'
+
+from calibre.web.feeds.news import BasicNewsRecipe
+import urllib
+
+class HaaretzRecipe(BasicNewsRecipe):
+    title = u'הארץ'
+    __author__ = "Guy Rutenberg"
+    language = 'he'
+    max_articles_per_feed = 100
+    auto_cleanup = False
+    use_embedded_content = False
+
+    feeds = [
+        (u'סוף השבוע', 'http://www.haaretz.co.il/cmlink/%D7%A1%D7%95%D7%A3-%D7%A9%D7%91%D7%95%D7%A2-1.1475630'),
+        (u'מאמרים ודעות', 'http://www.haaretz.co.il/cmlink/%D7%9E%D7%90%D7%9E%D7%A8%D7%99%D7%9D-%D7%95%D7%93%D7%A2%D7%95%D7%AA-1.1472481'),
+        (u'מגזין', 'http://www.haaretz.co.il/cmlink/1.1617677'),
+        (u'גלריה', 'http://www.haaretz.co.il/cmlink/%D7%92%D7%9C%D7%A8%D7%99%D7%94-1.1472287'),
+    ]
+    def print_version(self, url):
+        return 'http://www.haaretz.co.il/misc/smartphone-article/' + url.rsplit('/',1)[1]
+
+
+    extra_css = """body {direction:rtl;}""" 
+    timefmt = '%d/%m/%Y'
+
+    no_stylesheets = True
+    encoding = 'utf-8'
+    remove_tags = [
+        dict(name='div', attrs={'class': re.compile(r'\brelatedArticles-box\b')}),
+        dict(name='div', attrs={'class': re.compile(r'\bbottomSpacer\b')}),
+        dict(name='footer'),
+    ]
+    def preprocess_html(self, soup):
+        title = soup.find('div', attrs={'class':'main_title articleText'})
+        title.name = 'h1'
+        subtitle = soup.find('div', attrs={'class':'def_font bold articleText'})
+        subtitle.name = 'h2'
+        return soup
+
+    def preprocess_raw_html(self, raw_html, url):
+        """The HTML dom tree is broken, we need to fix it."""
+        
+        # remove BOM markers
+        raw_html = raw_html.replace('\xef\xbb\xbf','')
+        regexs = [
+            re.compile(r'<!--\[if.*?if\]-->', re.DOTALL),
+            re.compile(r'<!--.*?-->', re.DOTALL),
+            re.compile(r'<script.*?</script>', re.DOTALL),
+            re.compile(r'<style.*?</style>', re.DOTALL),
+        ]
+        for r in regexs:
+            raw_html = r.sub("", raw_html)
+
+        return raw_html
+
+    needs_subscription = True
+    def get_browser(self):
+        br = BasicNewsRecipe.get_browser(self)
+        br.open('http://www.haaretz.co.il')
+        if self.username is not None and self.password is not None:
+            data = urllib.urlencode({
+                'userName': self.username,
+                'password': self.password,
+                'newsso': 'true',
+                'fromlogin': 'true',
+                'layer': 'login',
+                'site': '80',
+            })
+            res = br.open('https://sso.themarker.com/sso/sso/signIn', data)
+        return br
+    

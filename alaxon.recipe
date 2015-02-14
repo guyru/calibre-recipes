@@ -1,0 +1,32 @@
+# vim:fileencoding=utf-8
+"""
+A Calibre recipe for http://www.alaxon.co.il
+"""
+
+__license__ = 'GPL v3'
+__copyright__ = '2015, Guy Rutenberg (http://www.guyrutenberg.com/contact-me)'
+
+from calibre.web.feeds.news import BasicNewsRecipe
+
+class AlaxonRecipe(BasicNewsRecipe):
+    title = u'אלכסון'
+    __author__ = "Guy Rutenberg"
+    language = 'he'
+    description = (u'כתב־עת דיגיטלי המפרסם מאמרים עבריים ומתורגמים '
+                   u'בתחומי המדע, הפילוסופיה, התרבות והאמנות.')
+    max_articles_per_feed = 100
+    auto_cleanup = True
+
+    feeds = [
+        'http://alaxon.co.il/feed/',
+    ]
+
+    extra_css = """body {direction:rtl;}""" 
+    timefmt = '%d/%m/%Y'
+
+    remove_tags = [
+        dict(name='q', attrs={'class': re.compile(r'\bhighlight\b')}),
+    ]
+    encoding = 'utf-8'
+    #masthead_url = 'http://alaxon.co.il/wp-content/themes/alaxon/images/alaxon-logo.png'
+    masthead_url = None
