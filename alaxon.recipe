@@ -15,18 +15,25 @@ class AlaxonRecipe(BasicNewsRecipe):
     description = (u'כתב־עת דיגיטלי המפרסם מאמרים עבריים ומתורגמים '
                    u'בתחומי המדע, הפילוסופיה, התרבות והאמנות.')
     max_articles_per_feed = 100
-    auto_cleanup = True
+    use_embedded_content = False
+    no_stylesheets = True
+    encoding = 'utf-8'
+
+    keep_only_tags = [
+        dict(name='section', attrs={'id':'titlestrip'}),
+        dict(name='section', attrs={'class':'the-author'}),
+        dict(name='div', attrs={'class':'content'}),
+    ]
 
     feeds = [
         'http://alaxon.co.il/feed/',
     ]
 
-    extra_css = """body {direction:rtl;}""" 
+    extra_css = """
+        body {direction:rtl;}
+        .wp-caption {font-size: smaller;}""" 
     timefmt = '%d/%m/%Y'
 
     remove_tags = [
         dict(name='q', attrs={'class': re.compile(r'\bhighlight\b')}),
     ]
-    encoding = 'utf-8'
-    #masthead_url = 'http://alaxon.co.il/wp-content/themes/alaxon/images/alaxon-logo.png'
-    masthead_url = None
