@@ -18,6 +18,7 @@ class HaaretzRecipe(BasicNewsRecipe):
     max_articles_per_feed = 100
     auto_cleanup = False
     use_embedded_content = False
+    ignore_duplicate_articles = {'url'}
 
     feeds = [
         (u'סוף השבוע', 'http://www.haaretz.co.il/cmlink/%D7%A1%D7%95%D7%A3-%D7%A9%D7%91%D7%95%D7%A2-1.1475630'),
