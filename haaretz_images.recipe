@@ -54,6 +54,10 @@ class HaaretzRecipe(BasicNewsRecipe):
         subtitle.name = 'h2'
         return soup
 
+    # The \s is needed because Haaretz embeds each video 3 times, the
+    # first 2 times are broken.
+    video_regex = re.compile(r'\s<iframe.*src="(?P<url>[^"]*)".*</iframe>')
+
     def preprocess_raw_html(self, raw_html, url):
         """The HTML dom tree is broken, we need to fix it."""
         
@@ -67,6 +71,8 @@ class HaaretzRecipe(BasicNewsRecipe):
         ]
         for r in regexs:
             raw_html = r.sub("", raw_html)
+
+        raw_html = self.video_regex.sub(r"<img src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http:\g<url>' />", raw_html)
 
         return raw_html
 
