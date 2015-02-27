@@ -20,17 +20,24 @@ class HaaretzRecipe(BasicNewsRecipe):
     use_embedded_content = False
     ignore_duplicate_articles = {'url'}
 
+    # Uncomment/comment feeds based on your liking.
     feeds = [
-        (u'סוף השבוע', 'http://www.haaretz.co.il/cmlink/%D7%A1%D7%95%D7%A3-%D7%A9%D7%91%D7%95%D7%A2-1.1475630'),
-        (u'מאמרים ודעות', 'http://www.haaretz.co.il/cmlink/%D7%9E%D7%90%D7%9E%D7%A8%D7%99%D7%9D-%D7%95%D7%93%D7%A2%D7%95%D7%AA-1.1472481'),
+        (u'סוף השבוע', 'http://www.haaretz.co.il/cmlink/1.1475630'),
+        (u'מאמרים ודעות', 'http://www.haaretz.co.il/cmlink/1.1472481'),
         (u'מגזין', 'http://www.haaretz.co.il/cmlink/1.1617677'),
-        (u'גלריה', 'http://www.haaretz.co.il/cmlink/%D7%92%D7%9C%D7%A8%D7%99%D7%94-1.1472287'),
+        # (u'גלריה', 'http://www.haaretz.co.il/cmlink/1.1472287'),
+        (u'מדע וסביבה', 'http://www.haaretz.co.il/cmlink/1.1472258'),
+        # (u'ספרים', 'http://www.haaretz.co.il/cmlink/1.1478711'),
+        # (u'קפטן אינטרנט', 'http://www.haaretz.co.il/cmlink/1.1478711'),
     ]
     def print_version(self, url):
         return 'http://www.haaretz.co.il/misc/smartphone-article/' + url.rsplit('/',1)[1]
 
 
-    extra_css = """body {direction:rtl;}""" 
+    extra_css = """
+        body {direction:rtl;}
+        .imageInfo .imageText {font-size: 0.8em;}
+        .imageInfo .credit {font-size: 0.7em;}"""
     timefmt = '%d/%m/%Y'
 
     no_stylesheets = True
