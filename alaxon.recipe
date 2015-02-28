@@ -7,33 +7,72 @@ __license__ = 'GPL v3'
 __copyright__ = '2015, Guy Rutenberg (http://www.guyrutenberg.com/contact-me)'
 
 from calibre.web.feeds.news import BasicNewsRecipe
+from calibre.ebooks.BeautifulSoup import BeautifulSoup, Tag
+import re
+import urllib
 
 class AlaxonRecipe(BasicNewsRecipe):
     title = u'אלכסון'
-    __author__ = "Guy Rutenberg"
-    language = 'he'
     description = (u'כתב־עת דיגיטלי המפרסם מאמרים עבריים ומתורגמים '
                    u'בתחומי המדע, הפילוסופיה, התרבות והאמנות.')
-    max_articles_per_feed = 100
-    use_embedded_content = False
-    no_stylesheets = True
-    encoding = 'utf-8'
 
-    keep_only_tags = [
-        dict(name='section', attrs={'id':'titlestrip'}),
-        dict(name='section', attrs={'class':'the-author'}),
-        dict(name='div', attrs={'class':'content'}),
-    ]
-
+    # List of feeds to download.
     feeds = [
         'http://alaxon.co.il/feed/',
     ]
 
+    # Maximum number of articles to download from each feed.
+    max_articles_per_feed = 100
+
+    # Oldest article to download from this news source. In days.
+    # oldest_article = 7.0
+
+    #The format string for the date shown on the first page.
+    timefmt = '%d/%m/%Y'
+
+    # If True, it will add a QR code with the article's URL at the
+    # end of each article.
+    qr_code = True
+
+    # ###########################
+    # Don't edit below this line.
+    # ###########################
+
+    __author__ = "Guy Rutenberg"
+    language = 'he'
+    use_embedded_content = False
+    no_stylesheets = True
+    encoding = 'utf-8'
+    keep_only_tags = [
+        dict(name='section', attrs={'id':'titlestrip'}),
+        dict(name='section', attrs={'class':'the-author'}),
+        dict(name='div', attrs={'class':'content'}),
+        dict(name='p', attrs={'class':'qr-code'}),
+    ]
+
+
     extra_css = """
         body {direction:rtl;}
-        .wp-caption {font-size: smaller;}""" 
-    timefmt = '%d/%m/%Y'
+        .wp-caption {font-size: smaller;}"""
 
     remove_tags = [
         dict(name='q', attrs={'class': re.compile(r'\bhighlight\b')}),
     ]
+
+    # Add a QR-code for sharing
+    @staticmethod
+    def get_qr_code_img(data, size='450x450'):
+        # The URL of the http://goqr.me/ service
+        qr_api_url = 'https://api.qrserver.com/v1/create-qr-code/?'
+        qr_img = Tag(BeautifulSoup(), 'img')
+        parameters = urllib.urlencode({'data': data, 'size': size})
+        qr_img['src'] = qr_api_url + parameters
+        qr_img['style'] = 'width: 3cm; height: 3cm;'
+        return qr_img
+
+    def preprocess_raw_html(self, raw_html, url):
+        qr_img = self.get_qr_code_img(url)
+        if self.qr_code:
+            soup = BeautifulSoup(raw_html)
+            soup.body.append('<p class="qr-code" style="text-align:center;">Share article<br/>%s</p>' % qr_img)
+        return soup.prettify()

@@ -1,6 +1,4 @@
 # vim:fileencoding=utf-8
-from calibre.ebooks.BeautifulSoup import BeautifulSoup
-import re
 """
 A Calibre recipe for http://www.haaretz.co.il
 """
@@ -9,6 +7,8 @@ __license__ = 'GPL v3'
 __copyright__ = '2015, Guy Rutenberg (http://www.guyrutenberg.com/contact-me)'
 
 from calibre.web.feeds.news import BasicNewsRecipe
+from calibre.ebooks.BeautifulSoup import BeautifulSoup, Tag
+import re
 import urllib
 
 class HaaretzRecipe(BasicNewsRecipe):
@@ -22,7 +22,7 @@ class HaaretzRecipe(BasicNewsRecipe):
 
     # Uncomment/comment feeds based on your liking.
     feeds = [
-        (u'סוף השבוע', 'http://www.haaretz.co.il/cmlink/1.1475630'),
+        (u'סוף השבוע', 'http://www.haaretz.co.il/cmlink/%D7%A1%D7%95%D7%A3-%D7%A9%D7%91%D7%95%D7%A2-1.1475630'),
         (u'מאמרים ודעות', 'http://www.haaretz.co.il/cmlink/1.1472481'),
         (u'מגזין', 'http://www.haaretz.co.il/cmlink/1.1617677'),
         # (u'גלריה', 'http://www.haaretz.co.il/cmlink/1.1472287'),
@@ -30,8 +30,17 @@ class HaaretzRecipe(BasicNewsRecipe):
         # (u'ספרים', 'http://www.haaretz.co.il/cmlink/1.1478711'),
         # (u'קפטן אינטרנט', 'http://www.haaretz.co.il/cmlink/1.1478711'),
     ]
+
+    # If True, it will add a QR code with the article's URL at the
+    # end of each article.
+    qr_code = True
+
     def print_version(self, url):
         return 'http://www.haaretz.co.il/misc/smartphone-article/' + url.rsplit('/',1)[1]
+
+    """Gets a print_version() url and returns the normal url for it."""
+    def regular_version(self, url):
+        return  'http://www.haaretz.co.il/misc/' + url.rsplit('/',1)[1]
 
 
     extra_css = """
@@ -47,6 +56,7 @@ class HaaretzRecipe(BasicNewsRecipe):
         dict(name='div', attrs={'class': re.compile(r'\bbottomSpacer\b')}),
         dict(name='footer'),
     ]
+
     def preprocess_html(self, soup):
         title = soup.find('div', attrs={'class':'main_title articleText'})
         title.name = 'h1'
@@ -54,13 +64,25 @@ class HaaretzRecipe(BasicNewsRecipe):
         subtitle.name = 'h2'
         return soup
 
+    # Add a QR-code for sharing
+    @staticmethod
+    def get_qr_code_img(data, size='450x450'):
+        # The URL of the http://goqr.me/ service
+        qr_api_url = 'https://api.qrserver.com/v1/create-qr-code/?'
+        qr_img = Tag(BeautifulSoup(), 'img')
+        parameters = urllib.urlencode({'data': data, 'size': size})
+        qr_img['src'] = qr_api_url + parameters
+        qr_img['style'] = 'width: 3cm; height: 3cm;'
+        return qr_img
+
+
     # The \s is needed because Haaretz embeds each video 3 times, the
     # first 2 times are broken.
     video_regex = re.compile(r'\s<iframe.*src="(?P<url>[^"]*)".*</iframe>')
 
     def preprocess_raw_html(self, raw_html, url):
         """The HTML dom tree is broken, we need to fix it."""
-        
+
         # remove BOM markers
         raw_html = raw_html.replace('\xef\xbb\xbf','')
         regexs = [
@@ -74,7 +96,13 @@ class HaaretzRecipe(BasicNewsRecipe):
 
         raw_html = self.video_regex.sub(r"<img src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http:\g<url>' />", raw_html)
 
+        if self.qr_code:
+            qr_img = self.get_qr_code_img(self.regular_version(url))
+            soup = BeautifulSoup(raw_html)
+            soup.body.append('<p class="qr-code" style="text-align:center;">Share article<br/>%s</p>' % qr_img)
+            raw_html = soup.prettify()
         return raw_html
+
 
     needs_subscription = True
     def get_browser(self):
@@ -91,4 +119,3 @@ class HaaretzRecipe(BasicNewsRecipe):
             })
             res = br.open('https://sso.themarker.com/sso/sso/signIn', data)
         return br
-    
