@@ -35,14 +35,6 @@ class HaaretzRecipe(BasicNewsRecipe):
     # end of each article.
     qr_code = True
 
-    def print_version(self, url):
-        return 'http://www.haaretz.co.il/misc/smartphone-article/' + url.rsplit('/',1)[1]
-
-    """Gets a print_version() url and returns the normal url for it."""
-    def regular_version(self, url):
-        return  'http://www.haaretz.co.il/misc/' + url.rsplit('/',1)[1]
-
-
     extra_css = """
         body {direction:rtl;}
         .imageInfo .imageText {font-size: 0.8em;}
@@ -51,17 +43,28 @@ class HaaretzRecipe(BasicNewsRecipe):
 
     no_stylesheets = True
     encoding = 'utf-8'
+    keep_only_tags = [
+        dict(name='article', attrs={'class': 'article  has-l-fixed-column'}),
+        dict(name='p', attrs={'class':'qr-code'}),
+    ]
+
     remove_tags = [
-        dict(name='div', attrs={'class': re.compile(r'\brelatedArticles-box\b')}),
-        dict(name='div', attrs={'class': re.compile(r'\bbottomSpacer\b')}),
-        dict(name='footer'),
+        dict(name='nav'),
+        dict(name='aside'),
+        dict(name='div', attrs={'class': 'art__tools'}),
+        dict(name='div', attrs={'class': 'rel-art'}),
     ]
 
     def preprocess_html(self, soup):
-        title = soup.find('div', attrs={'class':'main_title articleText'})
-        title.name = 'h1'
-        subtitle = soup.find('div', attrs={'class':'def_font bold articleText'})
-        subtitle.name = 'h2'
+        # Remove comments and stuff
+        section = soup.find('section', attrs={'class': 'article__entry'})
+        article_div = soup.find('div', attrs={'class': 'l-article__entry'})
+        article_div.replaceWith(section)
+
+
+        for picture in soup.findAll('picture'):
+            picture.img['src'] = picture.find('source',attrs={'media':''})['srcset']
+            picture.replaceWith(picture.img)
         return soup
 
     # Add a QR-code for sharing
@@ -94,11 +97,16 @@ class HaaretzRecipe(BasicNewsRecipe):
         for r in regexs:
             raw_html = r.sub("", raw_html)
 
-        raw_html = self.video_regex.sub(r"<img src='https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=http:\g<url>' />", raw_html)
-
         if self.qr_code:
-            qr_img = self.get_qr_code_img(self.regular_version(url))
             soup = BeautifulSoup(raw_html)
+            # replace videos with QR code
+            for div in soup.findAll('div', attrs={'class': 'video'}):
+                video_url = 'http:' + div.iframe['src']
+                qr_img = self.get_qr_code_img(video_url)
+                div.replaceWith('<p class="qr-code" style="text-align:center;">Video<br/>%s</p>' % qr_img)
+
+            # Add QR code with article's URL
+            qr_img = self.get_qr_code_img(url)
             soup.body.append('<p class="qr-code" style="text-align:center;">Share article<br/>%s</p>' % qr_img)
             raw_html = soup.prettify()
         return raw_html
