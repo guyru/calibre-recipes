@@ -117,5 +117,13 @@ class HaaretzRecipe(BasicNewsRecipe):
                 'layer': 'login',
                 'site': '80',
             })
+            # The login page returns a list of URLs that need to be visited
+            # in order to set the authentication cookies for each domain.
             res = br.open('https://sso.themarker.com/sso/sso/signIn', data)
+            response = res.read()
+            response_prefix = "null('success',"
+            if not response.startswith(response_prefix):
+                raise RuntimeError("Can't sign in. Verify that the username and password are correct.")
+            for url in re.findall(r'https://[^"]*', response):
+                br.open(url)
         return br
