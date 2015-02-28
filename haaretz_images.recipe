@@ -45,6 +45,7 @@ class HaaretzRecipe(BasicNewsRecipe):
     encoding = 'utf-8'
     keep_only_tags = [
         dict(name='article', attrs={'class': 'article  has-l-fixed-column'}),
+        dict(name='article', attrs={'class': None}),
         dict(name='p', attrs={'class':'qr-code'}),
     ]
 
@@ -52,7 +53,9 @@ class HaaretzRecipe(BasicNewsRecipe):
         dict(name='nav'),
         dict(name='aside'),
         dict(name='div', attrs={'class': 'art__tools'}),
+        dict(name='div', attrs={'class': 'bg h-group'}), # Magazine pages
         dict(name='div', attrs={'class': 'rel-art'}),
+        dict(name='footer'),
     ]
 
     def preprocess_html(self, soup):
@@ -100,7 +103,7 @@ class HaaretzRecipe(BasicNewsRecipe):
         if self.qr_code:
             soup = BeautifulSoup(raw_html)
             # replace videos with QR code
-            for div in soup.findAll('div', attrs={'class': 'video'}):
+            for div in soup.findAll('div', attrs={'class': re.compile(r'(video|innerVideo)[\s$]')}):
                 video_url = 'http:' + div.iframe['src']
                 qr_img = self.get_qr_code_img(video_url)
                 div.replaceWith('<p class="qr-code" style="text-align:center;">Video<br/>%s</p>' % qr_img)
