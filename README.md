@@ -8,7 +8,7 @@ A collection of Calibre news recipes targeting. The collection currently has:
 
 # Usage
 ```
-ebook-convert ./alaxon.recipe alaxon.azw3
+ebook-convert ./alaxon.recipe alaxon-`date +%F`.azw3
 ```
 
 Now you can copy your the resulting `azw3` file to your Kindle. Note that the resulting file isn't exactly a Kindle Periodical, as the `azw3` format doesn't support it. But Kindle doesn't support RTL for `mobi` files so this is the best solution. 
